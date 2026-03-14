@@ -44,7 +44,6 @@ def chat_loop():
                         return False
                     
     except KeyboardInterrupt:
-        sys.stdin.flush()
         print("\n[ Disconnect ]: Closing chat")
 
     finally:
