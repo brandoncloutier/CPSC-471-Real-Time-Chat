@@ -6,12 +6,33 @@ import json
 HOST = "localhost"
 PORT = 65432
 
-def chat_loop():
+
+def parse_port_arg():
+    if len(sys.argv) < 2:
+        print("[ Error ]: no args supplied")
+        sys.exit(1)
+    if len(sys.argv) > 2:
+        print("[ Error ]: expected exactly one argument: <server port>")
+        sys.exit(1)
+
+    try:
+        port = int(sys.argv[1])
+    except ValueError:
+        print("[ Error ]: server port must be an integer")
+        sys.exit(1)
+
+    if port < 1 or port > 65535:
+        print("[ Error ]: server port must be between 1 and 65535")
+        sys.exit(1)
+
+    return port
+
+def chat_loop(port):
     sel = selectors.DefaultSelector()
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     try:
-        client_socket.connect((HOST, PORT))
+        client_socket.connect((HOST, port))
     except ConnectionRefusedError:
         print("[ Error ]: Could not connect to server")
         client_socket.close()
@@ -19,7 +40,7 @@ def chat_loop():
 
     client_socket.setblocking(False)
 
-    print(f"Connected to {HOST}:{PORT}. Start typing messages:")
+    print(f"Connected to {HOST}:{port}. Start typing messages:")
 
     sel.register(sys.stdin, selectors.EVENT_READ)
     sel.register(client_socket, selectors.EVENT_READ)
@@ -76,13 +97,15 @@ def print_menu():
 
 
 def main():
+    port = parse_port_arg()
+
     try:
         while True:
             print_menu()
             user_input = input("Select an option: ")
             match user_input:
                 case "1":
-                    if chat_loop() == False: break 
+                    if chat_loop(port) == False: break 
                 case "2":
                     # Chat history logic
                     continue

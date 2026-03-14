@@ -1,6 +1,7 @@
 import socket
 import selectors
 import json
+import sys
 
 # Create a selector to monitor multiple sockets for I/O events
 sel = selectors.DefaultSelector()
@@ -9,6 +10,27 @@ clients = []
 
 HOST = "localhost"
 PORT = 65432
+
+
+def parse_port_arg():
+    if len(sys.argv) < 2:
+        print("[ Error ]: no args supplied")
+        sys.exit(1)
+    if len(sys.argv) > 2:
+        print("[ Error ]: expected exactly one argument: <port>")
+        sys.exit(1)
+
+    try:
+        port = int(sys.argv[1])
+    except ValueError:
+        print("[ Error ]: port must be an integer")
+        sys.exit(1)
+
+    if port < 1 or port > 65535:
+        print("[ Error ]: port must be between 1 and 65535")
+        sys.exit(1)
+
+    return port
 
 
 def accept_connection(server_socket):
@@ -79,11 +101,13 @@ def disconnect(client_socket):
 
 
 def main():
+    port = parse_port_arg()
+
     # Create a TCP socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Allow reuse of the address so we can restart the server quickly
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind((HOST, PORT))
+    server_socket.bind((HOST, port))
     # Tell the kernel to start accepting connections and queue them in a backlog
     server_socket.listen()
     # Set non-blocking so accept() doesn't block the event loop
@@ -91,7 +115,7 @@ def main():
     # Register the listening socket; accept_connection is stored as key.data
     sel.register(server_socket, selectors.EVENT_READ, accept_connection)
 
-    print(f"Server listening on {HOST}:{PORT}")
+    print(f"Server listening on {HOST}:{port}")
 
     try:
         while True:
