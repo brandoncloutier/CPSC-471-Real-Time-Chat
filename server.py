@@ -40,7 +40,6 @@ def accept_connection(server_socket):
     client_socket.setblocking(False)
     # Register the new client socket with the selector, using read_client as its callback
     sel.register(client_socket, selectors.EVENT_READ, read_client)
-    clients.append(client_socket)
     print(f"Client connected at {addr[0]}:{addr[1]}")
 
 
@@ -59,7 +58,13 @@ def read_client(client_socket):
         # convert json string to dict
         payload = json.loads(payload)
 
-        if payload["type"] == "chat_message":
+        if payload["type"] == "init" and payload["connection_type"] == "chat":
+            clients.append(client_socket)
+
+        elif payload["type"] == "init" and payload["connection_type"] == "chat_history_request":
+            pass
+
+        elif payload["type"] == "chat_message":
             client_host, client_port = client_socket.getpeername()
             message = payload["message"]
             outbound_message = f"[{client_host}:{client_port}] {message}"
@@ -71,12 +76,12 @@ def read_client(client_socket):
             # Send the message to all other connected clients
             outbound_data = outbound_message.encode()
             broadcast(outbound_data, client_socket)
-        elif payload["type"] == "chat_history_request":
-            pass
+
         else:
             print("else statement")
             # Empty data means the client disconnected
             disconnect(client_socket)
+            
     except ConnectionResetError:
         print("here")
         disconnect(client_socket)
@@ -95,7 +100,8 @@ def broadcast(message, sender_socket):
 def disconnect(client_socket):
     # Remove the socket from the selector and clients list, then close it
     sel.unregister(client_socket)
-    clients.remove(client_socket)
+    if client_socket in clients:
+        clients.remove(client_socket)
     client_socket.close()
     print("A client has disconnected.")
 
