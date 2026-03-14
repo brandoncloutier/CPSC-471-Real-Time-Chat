@@ -17,6 +17,9 @@ def chat_loop():
         client_socket.close()
         return True
 
+    init_payload = json.dumps({"type": "init", "connection_type": "chat"})
+    client_socket.sendall(init_payload.encode())
+
     client_socket.setblocking(False)
 
     print(f"Connected to {HOST}:{PORT}. Start typing messages:")
@@ -34,14 +37,8 @@ def chat_loop():
                     message = sys.stdin.readline().strip()
 
                     if message:
-                        # create payload dict
-                        payload = {
-                            "type": "chat_message",
-                            "message": message
-                        }
-
                         # convert payload dict to json string
-                        payload = json.dumps(payload)
+                        payload = json.dumps({"type": "chat_message", "message": message})
 
                         # send data encoded data to socket
                         client_socket.sendall(payload.encode())
