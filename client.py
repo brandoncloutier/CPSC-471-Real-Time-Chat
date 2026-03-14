@@ -1,6 +1,7 @@
 import sys
 import socket
 import selectors
+import json
 
 HOST = "localhost"
 PORT = 65432
@@ -31,8 +32,19 @@ def chat_loop():
                 if key.fileobj is sys.stdin:
                     # User typed something — read it and send to the server
                     message = sys.stdin.readline().strip()
+
                     if message:
-                        client_socket.sendall(message.encode())
+                        # create payload dict
+                        payload = {
+                            "type": "chat_message",
+                            "message": message
+                        }
+
+                        # convert payload dict to json string
+                        payload = json.dumps(payload)
+
+                        # send data encoded data to socket
+                        client_socket.sendall(payload.encode())
                 else:
                     # Server sent something — read and display it
                     data = client_socket.recv(4096)

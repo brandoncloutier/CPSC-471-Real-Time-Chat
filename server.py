@@ -1,5 +1,6 @@
 import socket
 import selectors
+import json
 
 # Create a selector to monitor multiple sockets for I/O events
 sel = selectors.DefaultSelector()
@@ -25,10 +26,21 @@ def read_client(client_socket):
     try:
         # Read up to 4096 bytes from the client
         data = client_socket.recv(4096)
-        if data:
+
+        # If the socket received no data then we know a client disconnected
+        if not data:
+            return disconnect(client_socket)
+        
+        # decode data
+        payload = data.decode()
+
+        # convert json string to dict
+        payload = json.loads(payload)
+
+        if payload["type"] == "chat_message":
             client_host, client_port = client_socket.getpeername()
-            inbound_message = data.decode()
-            outbound_message = f"[{client_host}:{client_port}] {inbound_message}"
+            message = payload["message"]
+            outbound_message = f"[{client_host}:{client_port}] {message}"
 
             # Log the message to a file
             with open("messages.txt", "a") as f:
@@ -37,10 +49,14 @@ def read_client(client_socket):
             # Send the message to all other connected clients
             outbound_data = outbound_message.encode()
             broadcast(outbound_data, client_socket)
+        elif payload["type"] == "chat_history_request":
+            pass
         else:
+            print("else statement")
             # Empty data means the client disconnected
             disconnect(client_socket)
     except ConnectionResetError:
+        print("here")
         disconnect(client_socket)
 
 
