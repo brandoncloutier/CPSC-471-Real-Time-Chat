@@ -84,6 +84,41 @@ def chat_loop(port):
     
     return True
 
+
+def chat_history(port):
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    try:
+        client_socket.connect((HOST, port))
+    except ConnectionRefusedError:
+        print("[ Error ]: Could not connect to server")
+        client_socket.close()
+        return
+
+    request_payload = json.dumps({"type": "init", "connection_type": "chat_history_request"})
+    client_socket.sendall(request_payload.encode())
+
+    print("===== Chat History =====")
+    chunks = []
+
+    while True:
+        data = client_socket.recv(4096)
+        if not data:
+            break
+        chunks.append(data.decode())
+
+    if not chunks:
+        print("[ Info ]: No chat history found.")
+    else:
+        history_text = "".join(chunks)
+        print(history_text, end="")
+        if not history_text.endswith("\n"):
+            print()
+
+    print("========================")
+    client_socket.close()
+
+
 def print_menu():
     print("===== Chat Interface Menu =====")
     print("1. Enter Chat")
@@ -104,7 +139,7 @@ def main():
                 case "1":
                     if chat_loop(port) == False: break 
                 case "2":
-                    # Chat history logic
+                    chat_history(port)
                     continue
                 case "3":
                     print("\n[ Exiting ]: Closing chat interface")

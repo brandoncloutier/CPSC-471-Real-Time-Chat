@@ -62,7 +62,8 @@ def read_client(client_socket):
             clients.append(client_socket)
 
         elif payload["type"] == "init" and payload["connection_type"] == "chat_history_request":
-            pass
+            send_chat_history(client_socket)
+            disconnect(client_socket)
 
         elif payload["type"] == "chat_message":
             client_host, client_port = client_socket.getpeername()
@@ -85,6 +86,19 @@ def read_client(client_socket):
     except ConnectionResetError:
         print("here")
         disconnect(client_socket)
+
+
+def send_chat_history(client_socket):
+    try:
+        with open("messages.txt", "r") as f:
+            history = f.read().strip()
+    except FileNotFoundError:
+        history = ""
+
+    if not history:
+        history = "[ Info ]: No chat history found."
+
+    client_socket.sendall(history.encode())
 
 
 def broadcast(message, sender_socket):
