@@ -2,25 +2,26 @@ import sys
 import socket
 import selectors
 
-# Create a selector to monitor both stdin and the server socket
-sel = selectors.DefaultSelector()
-
 HOST = "localhost"
 PORT = 65432
 
-
-def main():
-    # Create a TCP socket and connect to the server
+def chat_loop():
+    sel = selectors.DefaultSelector()
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((HOST, PORT))
-    # Set non-blocking so recv() doesn't block the event loop
+
+    try:
+        client_socket.connect((HOST, PORT))
+    except ConnectionRefusedError:
+        print("[ Error ]: Could not connect to server")
+        client_socket.close()
+        return True
+
     client_socket.setblocking(False)
 
-    # Register stdin (keyboard input) and the server socket with the selector
+    print(f"Connected to {HOST}:{PORT}. Start typing messages:")
+
     sel.register(sys.stdin, selectors.EVENT_READ)
     sel.register(client_socket, selectors.EVENT_READ)
-
-    print(f"Connected to {HOST}:{PORT}. Start typing messages:")
 
     try:
         while True:
@@ -39,16 +40,49 @@ def main():
                         print(data.decode())
                     else:
                         # Empty data means the server closed the connection
-                        print("Server closed the connection.")
-                        return
+                        print("[ Exiting ] Server closed the connection")
+                        return False
+                    
     except KeyboardInterrupt:
-        print("\nDisconnected.")
+        sys.stdin.flush()
+        print("\n[ Disconnect ]: Closing chat")
+
     finally:
-        # Clean up the selector and socket
         sel.unregister(sys.stdin)
         sel.unregister(client_socket)
         client_socket.close()
         sel.close()
+    
+    return True
+
+def print_menu():
+    print("===== Chat Interface Menu =====")
+    print("1. Enter Chat")
+    print("2. Chat History")
+    print("3. Exit")
+    print("===============================")
+    return
+
+
+def main():
+    try:
+        while True:
+            print_menu()
+            user_input = input("Select an option: ")
+            match user_input:
+                case "1":
+                    if chat_loop() == False: break 
+                case "2":
+                    # Chat history logic
+                    continue
+                case "3":
+                    print("\n[ Exiting ]: Closing chat interface")
+                    break
+                case _:
+                    print("User inputted an unavailable option")
+
+    except KeyboardInterrupt:
+        print("\n[ Exiting ]: Closing chat interface")
 
 
 if __name__ == "__main__":

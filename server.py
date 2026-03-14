@@ -26,7 +26,7 @@ def read_client(client_socket):
         # Read up to 4096 bytes from the client
         data = client_socket.recv(4096)
         if data:
-            client_host, client_port = client_socket.getsockname()
+            client_host, client_port = client_socket.getpeername()
             inbound_message = data.decode()
             outbound_message = f"[{client_host}:{client_port}] {inbound_message}"
 
